@@ -9,4 +9,5 @@ Gem::Specification.new do |s|
    s.files	= ['lib/evergreen_holdings.rb']
    s.license	= 'MIT'
    s.add_development_dependency	'minitest'
+   s.add_development_dependency	'coveralls', '0.7.0'
 end
