@@ -126,7 +126,7 @@ module EvergreenHoldings
 
     class Item
         attr_accessor :location, :status
-        attr_reader :barcode
+        attr_reader :barcode, :call_number
         def initialize data = {}
             data.each do |k,v|
                 instance_variable_set("@#{k}", v) unless v.nil?
