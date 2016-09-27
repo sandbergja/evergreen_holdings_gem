@@ -87,6 +87,7 @@ module EvergreenHoldings
                 return true if 0 == copy.status
                 return true if 'Available' == copy.status
             end
+            return false
         end
 
         private

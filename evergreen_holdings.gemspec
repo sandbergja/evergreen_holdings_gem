@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
    s.name	= 'evergreen_holdings'
    s.summary	= 'A ruby gem for getting information about copy availability from Evergreen ILS'
-   s.version	= '0.1.2'
+   s.version	= '0.1.3'
    s.date	= '2016-09-27'
    s.description	= 'Access holdings information from Evergreen ILS'
    s.authors	= ['Jane Sandberg']
