@@ -1,0 +1,17 @@
+language: ruby
+sudo: false
+
+matrix:
+  include:
+    - rvm: 2.3.1
+      env: "RAILS_VERSION=4.2.5"
+    - rvm: 2.3.1
+      jdk: openjdk7
+      env: "RAILS_VERSION=4.2.5"
+    - rvm: 2.3.1
+      jdk: oraclejdk7
+      env: "RAILS_VERSION=4.2.5"
+    - rvm: 2.3.1
+      jdk: oraclejdk8
+      env: "RAILS_VERSION=4.2.5"
+
