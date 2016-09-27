@@ -1,0 +1,2 @@
+class CouldNotConnectToEvergreenError < StandardError
+end
