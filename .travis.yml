@@ -15,3 +15,5 @@ matrix:
       jdk: oraclejdk8
       env: "RAILS_VERSION=4.2.5"
 
+before_install:
+- gem install -v '0.7.0' coveralls
