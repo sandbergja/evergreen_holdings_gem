@@ -30,15 +30,15 @@ module EvergreenHoldings
             end
             @gateway.query = params
 
-            res = Net::HTTP.get_response(@gateway)
-            return Status.new res.body, self if res.is_a?(Net::HTTPSuccess)
+            res = send_query
+            return Status.new res.body, self if res
         end
 
         def location_name id
             params = "format=json&input_format=json&service=open-ils.circ&method=open-ils.circ.copy_location.retrieve&param=#{id}"
             @gateway.query = params
-            res = Net::HTTP.get_response(@gateway)
-            if res.is_a? Net::HTTPSuccess
+            res = send_query
+            if res
                 data = JSON.parse(res.body)['payload'][0]
                 unless data.key? 'stacktrace'
                     return data['__p'][4]
@@ -53,12 +53,22 @@ module EvergreenHoldings
 
         private
 
+        def send_query
+            begin
+                res = Net::HTTP.get_response(@gateway)
+            rescue Errno::ECONNREFUSED
+                return nil
+            end
+            return res if res.is_a?(Net::HTTPSuccess)
+            return nil
+        end
+
         def fetch_statuses
             @possible_item_statuses = []
             params = 'format=json&input_format=json&service=open-ils.search&method=open-ils.search.config.copy_status.retrieve.all'
             @gateway.query = params
-            res = Net::HTTP.get_response(@gateway)
-            if res.is_a?(Net::HTTPSuccess)
+            res = send_query
+            if res
                 stats = JSON.parse(res.body)['payload'][0]
                 stats.each do |stat|
                     @possible_item_statuses[stat['__p'][1]] = stat['__p'][2]
@@ -70,6 +80,7 @@ module EvergreenHoldings
 
     end
 
+    # Status objects represent all the holdings attached to a specific tcn
     class Status
         attr_reader :copies
         def initialize json_data, connection = nil
@@ -125,6 +136,7 @@ module EvergreenHoldings
 
     end
 
+    # A physical copy of an item
     class Item
         attr_accessor :location, :status
         attr_reader :barcode, :call_number
