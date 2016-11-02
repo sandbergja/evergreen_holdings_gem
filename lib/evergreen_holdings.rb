@@ -56,7 +56,7 @@ module EvergreenHoldings
         def send_query
             begin
                 res = Net::HTTP.get_response(@gateway)
-            rescue Errno::ECONNREFUSED
+            rescue Errno::ECONNREFUSED, Net::ReadTimeout
                 return nil
             end
             return res if res.is_a?(Net::HTTPSuccess)
