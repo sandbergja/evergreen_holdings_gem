@@ -21,6 +21,14 @@ Check on the availability for the TCN of your choosing:
 
     status = conn.get_holdings 1234
     
+You can limit results to a specific org unit (given its database ID):
+
+    status = conn.get_holdings 1234, org_unit: 17
+
+And you can also limit to an org unit and its descendants:
+
+    status = conn.get_holdings 1234, org_unit: 17, descendants: true
+
 See if that TCN has any copies available:
 
     status.any_copies_available?

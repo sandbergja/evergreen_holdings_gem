@@ -25,7 +25,16 @@ module EvergreenHoldings
         # If you just want holdings at a specific org_unit: `my_connection.get_holdings 23405, org_unit: 5`
         def get_holdings tcn, options = {}
             if options.key?(:org_unit)
-                params = "format=json&input_format=json&service=open-ils.cat&method=open-ils.cat.asset.copy_tree.retrieve&param=auth_token_not_needed_for_this_call&param=#{tcn}&param=#{options[:org_unit]}"
+                if options[:descendants]
+                    params = "format=json&input_format=json&service=open-ils.cat&method=open-ils.cat.asset.copy_tree.retrieve&param=auth_token_not_needed_for_this_call&param=#{tcn}"
+                    if @org_units[options[:org_unit]][:descendants]
+                        @org_units[options[:org_unit]][:descendants].each do |ou|
+                            params <<  + "&param=#{ou}"
+                        end
+                    end
+                else
+                    params = "format=json&input_format=json&service=open-ils.cat&method=open-ils.cat.asset.copy_tree.retrieve&param=auth_token_not_needed_for_this_call&param=#{tcn}&param=#{options[:org_unit]}"
+                end
             else
                 params = "format=json&input_format=json&service=open-ils.cat&method=open-ils.cat.asset.copy_tree.global.retrieve&param=auth_token_not_needed_for_this_call&param=#{tcn}"
             end
