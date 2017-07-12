@@ -6,6 +6,7 @@ OSRF_PATH = '/osrf-gateway-v1'
 
 module EvergreenHoldings
     class Connection
+        attr_reader :org_units
         # Create a new object with the evergreen_domain
         # specified, e.g. http://libcat.linnbenton.edu
         #
@@ -130,11 +131,11 @@ module EvergreenHoldings
 
     # Status objects represent all the holdings attached to a specific tcn
     class Status
-        attr_reader :copies
+        attr_reader :copies, :libraries
         def initialize json_data, connection = nil
             @connection = connection
             @raw_data = JSON.parse(json_data)['payload'][0]
-            @copies = extract_copies
+            extract_copies
             substitute_values_for_ids unless @connection.nil?
             @available_copies = []
             @next_copy_available = 'a date'
@@ -150,30 +151,30 @@ module EvergreenHoldings
         end
 
         private
+
         # Look through @raw_data and find the copies
         def extract_copies 
-            copies = Array.new
+            @copies = Array.new
             @raw_data.each do |vol|
                 if vol['__p'][0].size > 0
                     vol['__p'][0].each do |item|
                         unless item['__p'][35].nil?
-				copies.push Item.new barcode: item['__p'][2], call_number: vol['__p'][7], location: item['__p'][24], status: item['__p'][28], owning_lib: item['__p'][5]
+				@copies.push Item.new barcode: item['__p'][2], call_number: vol['__p'][7], location: item['__p'][24], status: item['__p'][28], owning_lib: item['__p'][5]
                         else
                             begin
-				    copies.push Item.new barcode: item['__p'][2], call_number: vol['__p'][7], due_date: item['__p'][35][0]['__p'][6], location: item['__p'][24], status: item['__p'][28], owning_lib: item['__p'][5]
+				    @copies.push Item.new barcode: item['__p'][2], call_number: vol['__p'][7], due_date: item['__p'][35][0]['__p'][6], location: item['__p'][24], status: item['__p'][28], owning_lib: item['__p'][5]
                             rescue
-				    puts item['__p'][5]
-				    puts @org_units
-				    copies.push Item.new barcode: item['__p'][2], call_number: vol['__p'][7], location: item['__p'][24], status: item['__p'][28], owning_lib: item['__p'][5]
+				    @copies.push Item.new barcode: item['__p'][2], call_number: vol['__p'][7], location: item['__p'][24], status: item['__p'][28], owning_lib: item['__p'][5]
                             end
                         end
                     end
                 end
            end
-           return copies
         end
 
         def substitute_values_for_ids
+	    @libraries = @connection.org_units.clone
+	    @libraries.each { |key, lib| lib[:copies] = Array.new }
             @copies.each do |copy|
                 if copy.location.is_a? Numeric
                     copy.location = @connection.location_name copy.location
@@ -182,7 +183,9 @@ module EvergreenHoldings
                     copy.status = @connection.status_name copy.status
                 end
                 if copy.owning_lib.is_a? Numeric
+                    ou_id = copy.owning_lib
                     copy.owning_lib = @connection.ou_name copy.owning_lib
+                    @libraries[ou_id][:copies].push copy
                 end
             end
         end
