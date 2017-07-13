@@ -158,7 +158,8 @@ module EvergreenHoldings
             @raw_data.each do |vol|
                 if vol['__p'][0].size > 0
                     vol['__p'][0].each do |item|
-                        unless item['__p'][35].nil?
+			i = 0
+                        unless item['__p'][35].is_a? Array
 				@copies.push Item.new barcode: item['__p'][2], call_number: vol['__p'][7], location: item['__p'][24], status: item['__p'][28], owning_lib: item['__p'][5]
                         else
                             begin
