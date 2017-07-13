@@ -196,7 +196,7 @@ module EvergreenHoldings
     # A physical copy of an item
     class Item
         attr_accessor :location, :status, :owning_lib
-        attr_reader :barcode, :call_number
+        attr_reader :barcode, :call_number, :due_date
         def initialize data = {}
             data.each do |k,v|
                 instance_variable_set("@#{k}", v) unless v.nil?
