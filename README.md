@@ -17,7 +17,7 @@ Start up a connection:
 
     conn = EvergreenHoldings::Connection.new 'http://libcat.linnbenton.edu'
 
-Check on the availability for the TCN of your choosing:
+Check on the availability for the Record ID of your choosing:
 
     status = conn.get_holdings 1234
     
@@ -29,7 +29,7 @@ And you can also limit to an org unit and its descendants:
 
     status = conn.get_holdings 1234, org_unit: 17, descendants: true
 
-See if that TCN has any copies available:
+See if that Record ID has any copies available:
 
     status.any_copies_available?
     => false
