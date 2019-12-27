@@ -17,3 +17,4 @@ matrix:
 
 before_install:
 - gem install -v '0.7.0' coveralls
+- gem install -v '1.10.4' nokogiri
