@@ -1,6 +1,8 @@
 require 'net/http'
 require 'json'
 require 'evergreen_holdings/errors'
+require 'nokogiri'
+require 'open-uri'
 
 OSRF_PATH = '/osrf-gateway-v1'
 
@@ -12,11 +14,13 @@ module EvergreenHoldings
         #
         # Usage: `conn = EvergreenHoldings::Connection.new 'http://gapines.org'`
         def initialize evergreen_domain
+            @evergreen_domain = evergreen_domain
             @gateway = URI evergreen_domain+OSRF_PATH
+            fetch_idl_order
             unless fetch_statuses
                 raise CouldNotConnectToEvergreenError
             end
-	    fetch_ou_tree
+            fetch_ou_tree
         end
 
         # Fetch holdings data from the Evergreen server
@@ -42,7 +46,7 @@ module EvergreenHoldings
             @gateway.query = params
 
             res = send_query
-            return Status.new res.body, self if res
+            return Status.new res.body, @idl_order, self if res
         end
 
 	# Given an ID, returns a human-readable name
@@ -53,7 +57,7 @@ module EvergreenHoldings
             if res
                 data = JSON.parse(res.body)['payload'][0]
                 unless data.key? 'stacktrace'
-                    return data['__p'][4]
+                    return data['__p'][@idl_order[:acpl]['name']]
                 end
             end
             return id
@@ -77,13 +81,14 @@ module EvergreenHoldings
 	end
 
 	def take_info_from_ou_tree o
-	    @org_units[o[3]] = {}
-	    @org_units[o[3]][:name] = o[6]
-	    if o[8]
-	        @org_units[o[3]][:parent] = o[8]
-	        add_ou_descendants o[3], o[8]
+            id = o[@idl_order[:aou]['id']]
+	    @org_units[id] = {}
+	    @org_units[id][:name] = o[@idl_order[:aou]['name']]
+	    if o[@idl_order[:aou]['parent_ou']]
+	        @org_units[id][:parent] = o[@idl_order[:aou]['parent_ou']]
+	        add_ou_descendants id, o[@idl_order[:aou]['parent_ou']]
             end
-	    o[0].each do |p|
+	    o[@idl_order[:aou]['children']].each do |p|
 	        take_info_from_ou_tree p['__p']
 	    end 
 	end
@@ -99,6 +104,22 @@ module EvergreenHoldings
             return nil
         end
 
+        def fetch_idl_order
+            @idl_order = {}
+
+            idl = Nokogiri::XML(open(@evergreen_domain + '/reports/fm_IDL.xml'))
+
+            [:acn, :acp, :acpl, :aou, :ccs, :circ].each do |idl_class|
+                i = 0
+                @idl_order[idl_class] = {}
+                fields = idl.xpath("//idl:class[@id='#{idl_class}']/idl:fields/idl:field", 'idl' => 'http://opensrf.org/spec/IDL/base/v1')
+                fields.each do |field|
+                    @idl_order[idl_class][field['name']] = i
+                    i = i + 1
+                end
+            end
+        end
+
         def fetch_statuses
             @possible_item_statuses = []
             params = 'format=json&input_format=json&service=open-ils.search&method=open-ils.search.config.copy_status.retrieve.all'
@@ -107,7 +128,7 @@ module EvergreenHoldings
             if res
                 stats = JSON.parse(res.body)['payload'][0]
                 stats.each do |stat|
-                    @possible_item_statuses[stat['__p'][1]] = stat['__p'][2]
+                    @possible_item_statuses[stat['__p'][@idl_order[:ccs]['id']]] = stat['__p'][@idl_order[:ccs]['name']]
                 end
                 return true if stats.size > 0
             end
@@ -132,7 +153,8 @@ module EvergreenHoldings
     # Status objects represent all the holdings attached to a specific tcn
     class Status
         attr_reader :copies, :libraries
-        def initialize json_data, connection = nil
+        def initialize json_data, idl_order, connection = nil
+            @idl_order = idl_order
             @connection = connection
             @raw_data = JSON.parse(json_data)['payload'][0]
             extract_copies
@@ -159,14 +181,21 @@ module EvergreenHoldings
                 if vol['__p'][0].size > 0
                     vol['__p'][0].each do |item|
 			i = 0
-                        unless item['__p'][35].is_a? Array
-				@copies.push Item.new barcode: item['__p'][2], call_number: vol['__p'][7], location: item['__p'][24], status: item['__p'][28], owning_lib: item['__p'][5]
+                        item_info = {
+                            barcode: item['__p'][@idl_order[:acp]['barcode']],
+                            call_number: vol['__p'][@idl_order[:acn]['label']],
+                            location: item['__p'][@idl_order[:acp]['location']],
+                            status: item['__p'][@idl_order[:acp]['status']],
+                            owning_lib: item['__p'][@idl_order[:acp]['circ_lib']],
+                        }
+                        unless item['__p'][@idl_order[:acp]['circulations']].is_a? Array
+				@copies.push Item.new item_info
                         else
                             begin
-				    @copies.push Item.new barcode: item['__p'][2], call_number: vol['__p'][7], due_date: item['__p'][35][0]['__p'][6], location: item['__p'][24], status: item['__p'][28], owning_lib: item['__p'][5]
+                                    item_info[:due_date] = item['__p'][@idl_order[:acp]['circulations']][0]['__p'][@idl_order[:circ]['due_date']]
                             rescue
-				    @copies.push Item.new barcode: item['__p'][2], call_number: vol['__p'][7], location: item['__p'][24], status: item['__p'][28], owning_lib: item['__p'][5]
                             end
+	                    @copies.push Item.new item_info
                         end
                     end
                 end
