@@ -58,3 +58,8 @@ There is no need to create a new connection for each holdings request.  I create
 The rescue statement ensures that if Evergreen is down for some reason, it doesn't take my rails app down with it.  Since I store the connection object in the session variable, I have to rely on ActiveRecord sessions, rather than Rails' default cookie system.
 
 I then make status requests as needed and create views code accordingly.
+
+Run tests
+---------
+
+Just run `rake test`
