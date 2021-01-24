@@ -47,17 +47,19 @@ copy/availability information to their patrons.  Here's how I use this gem in my
 
 I include `gem 'evergreen_holdings'` in my Gemfile
 
-There is no need to create a new connection for each holdings request.  I create a new Connection for each session by including the following in my application controller.  There shouldn't even be a need to create it for each session, theoretically.
+My controller grabs an instance from the cache (in-memory, memcached, or whichever cache you prefer):
 
-      begin
-          session[:evergreen_connection] = EvergreenHoldings::Connection.new 'http://libcat.linnbenton.edu'
-      rescue CouldNotConnectToEvergreenError
-          session[:evergreen_connection] = nil
-      end
- 
-The rescue statement ensures that if Evergreen is down for some reason, it doesn't take my rails app down with it.  Since I store the connection object in the session variable, I have to rely on ActiveRecord sessions, rather than Rails' default cookie system.
+    @evergreen_connection = Rails.cache.fetch('evergreen_connection', expires_in: 1.day) do
+      EvergreenHoldings::Connection.new 'https://libcat.linnbenton.edu'
+    end
 
-I then make status requests as needed and create views code accordingly.
+Then, I pass around `evergreen_connection` to every place on the page that needs it, to take advantage of some internal caching that happens in the individual instance.
+
+And of course, it's nice to cache the results too, to avoid needing to fetch them again:
+
+    Rails.cache.fetch("evergreen-#{bib_id}", expires_in: 1.day) do
+      @evergreen_connection.get_holdings bib_id
+    end
 
 Run tests
 ---------
