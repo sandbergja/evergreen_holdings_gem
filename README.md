@@ -61,7 +61,9 @@ And of course, it's nice to cache the results too, to avoid needing to fetch the
       @evergreen_connection.get_holdings bib_id
     end
 
-Run tests
----------
+Development
+-----------
 
-Just run `rake test`
+Run `bundle` to install the dependencies for this gem.
+
+Run `bundle exec rake test` to run the test suite.

@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
    s.test_files	= ['test/evergreen_holdings_test.rb']
    s.license	= 'MIT'
    s.add_runtime_dependency 'nokogiri', '~>1.11'
-   s.add_development_dependency	'coveralls', '~>0.7.0'
    s.add_development_dependency	'minitest', '~>5.0.0'
+   s.add_development_dependency	'rake'
    s.add_development_dependency	'rubocop', '>1.0.0', '<2'
 end
