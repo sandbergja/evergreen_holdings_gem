@@ -1,5 +1,3 @@
-require 'rake/file_list'
-
 Gem::Specification.new do |s|
   s.name	= 'evergreen_holdings'
   s.homepage = 'https://github.com/sandbergja/evergreen_holdings_gem'
@@ -9,7 +7,9 @@ Gem::Specification.new do |s|
   s.description	= 'Access holdings information from Evergreen ILS'
   s.authors	= ['Jane Sandberg']
   s.email	= 'sandbej@linnbenton.edu'
-  s.files	= Rake::FileList['lib/evergreen_holdings.rb', 'lib/evergreen_holdings/*'].to_a
+  s.files	= Dir.chdir(File.expand_path(__dir__)) do
+    `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
+  end
   s.test_files	= ['test/evergreen_holdings_test.rb']
   s.license	= 'MIT'
   s.add_runtime_dependency 'nokogiri', '~>1.11'
