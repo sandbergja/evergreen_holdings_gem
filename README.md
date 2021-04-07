@@ -13,7 +13,7 @@ Install and load this gem in an IRB session:
 
 Start up a connection:
 
-    conn = EvergreenHoldings::Connection.new 'http://libcat.linnbenton.edu'
+    conn = EvergreenHoldings::Connection.new 'https://libcat.linnbenton.edu'
 
 Check on the availability for the Record ID of your choosing:
 
