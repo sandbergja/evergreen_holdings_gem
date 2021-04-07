@@ -1,0 +1,45 @@
+<IDL xmlns='http://opensrf.org/spec/IDL/base/v1' xmlns:idl='http://opensrf.org/spec/IDL/base/v1' xmlns:oils_persist='http://open-ils.org/spec/opensrf/IDL/persistence/v1' xmlns:oils_obj='http://open-ils.org/spec/opensrf/IDL/objects/v1' xmlns:reporter='http://open-ils.org/spec/opensrf/IDL/reporter/v1' xmlns:permacrud='http://open-ils.org/spec/opensrf/IDL/permacrud/v1'>
+
+	<class id='acn' controller='open-ils.cstore open-ils.pcrud' oils_obj:fieldmapper='asset::call_number' oils_persist:tablename='asset.call_number' reporter:label='Call Number/Volume'>
+		<fields oils_persist:primary='id' oils_persist:sequence='asset.call_number_id_seq'>
+			<field reporter:label='Copies' name='copies' oils_persist:virtual='true' reporter:datatype='link'></field>
+			<field reporter:label='Create Date/Time' name='create_date' reporter:datatype='timestamp'></field>
+			<field reporter:label='Creating User' name='creator' reporter:datatype='link'></field>
+			<field reporter:label='Is Deleted' name='deleted' reporter:datatype='bool'></field>
+			<field reporter:label='Last Edit Date/Time' name='edit_date' reporter:datatype='timestamp'></field>
+			<field reporter:label='Last Editing User' name='editor' reporter:datatype='link'></field>
+			<field reporter:label='Call Number/Volume ID' name='id' reporter:datatype='id'></field>
+			<field reporter:label='Call Number Label' name='label' reporter:datatype='text'></field>
+			<field reporter:label='Owning Library' name='owning_lib' reporter:datatype='org_unit'></field>
+			<field reporter:label='Bib Record' name='record' reporter:datatype='link'></field>
+			<field reporter:label='Notes' name='notes' oils_persist:virtual='true' reporter:datatype='link'></field>
+			<field reporter:label='URI Maps' name='uri_maps' oils_persist:virtual='true' reporter:datatype='link'></field>
+			<field reporter:label='URIs' name='uris' oils_persist:virtual='true' reporter:datatype='link'></field>
+			<field reporter:label='Call Number Sort Key' name='label_sortkey' reporter:datatype='text'></field>
+			<field reporter:label='Classification Scheme' name='label_class' reporter:datatype='link'></field>
+			<field reporter:label='Prefix' name='prefix' reporter:datatype='link'></field>
+			<field reporter:label='Suffix' name='suffix' reporter:datatype='link'></field>
+		</fields>
+		<links>
+			<link field='editor' reltype='has_a' key='id' map='' class='au'></link>
+			<link field='creator' reltype='has_a' key='id' map='' class='au'></link>
+			<link field='record' reltype='has_a' key='id' map='' class='bre'></link>
+			<link field='owning_lib' reltype='has_a' key='id' map='' class='aou'></link>
+			<link field='notes' reltype='has_many' key='call_number' map='' class='acnn'></link>
+			<link field='copies' reltype='has_many' key='call_number' map='' class='acp'></link>
+			<link field='uris' reltype='has_many' key='call_number' map='uri' class='auricnm'></link>
+			<link field='uri_maps' reltype='has_many' key='call_number' map='' class='auricnm'></link>
+			<link field='label_class' reltype='has_a' key='id' map='' class='acnc'></link>
+			<link field='prefix' reltype='has_a' key='id' map='' class='acnp'></link>
+			<link field='suffix' reltype='has_a' key='id' map='' class='acns'></link>
+		</links>
+        <permacrud xmlns='http://open-ils.org/spec/opensrf/IDL/permacrud/v1'>
+            <actions>
+                <create permission='CREATE_VOLUME' context_field='owning_lib'></create>
+                <retrieve></retrieve>
+                <update permission='UPDATE_VOLUME' context_field='owning_lib'></update>
+                <delete permission='DELETE_VOLUME' context_field='owning_lib'></delete>
+            </actions>
+        </permacrud>
+	</class>
+</IDL>

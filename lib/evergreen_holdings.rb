@@ -3,6 +3,7 @@
 require 'net/http'
 require 'json'
 require 'evergreen_holdings/errors'
+require 'evergreen_holdings/idl_parser'
 require 'nokogiri'
 require 'open-uri'
 
@@ -11,6 +12,7 @@ OSRF_PATH = '/osrf-gateway-v1'
 module EvergreenHoldings
   class Connection
     attr_reader :org_units
+
     # Create a new object with the evergreen_domain
     # specified, e.g. http://libcat.linnbenton.edu
     #
@@ -60,7 +62,7 @@ module EvergreenHoldings
 
     def ou_name(id)
       @org_units[id][:name]
-        end
+    end
 
     private
 
@@ -76,7 +78,7 @@ module EvergreenHoldings
       if o[@idl_order[:aou]['parent_ou']]
         @org_units[id][:parent] = o[@idl_order[:aou]['parent_ou']]
         add_ou_descendants id, o[@idl_order[:aou]['parent_ou']]
-          end
+      end
       o[@idl_order[:aou]['children']].each do |p|
         take_info_from_ou_tree p['__p']
       end
@@ -110,23 +112,13 @@ module EvergreenHoldings
     end
 
     def fetch_idl_order
-      @idl_order = {}
-
       begin
         idl = Nokogiri::XML(URI.parse("#{@evergreen_domain}/reports/fm_IDL.xml").open)
       rescue Errno::ECONNREFUSED, Net::ReadTimeout, OpenURI::HTTPError
         raise CouldNotConnectToEvergreenError
       end
 
-      %i[acn acp acpl aou ccs circ].each do |idl_class|
-        i = 0
-        @idl_order[idl_class] = {}
-        fields = idl.xpath("//idl:class[@id='#{idl_class}']/idl:fields/idl:field", 'idl' => 'http://opensrf.org/spec/IDL/base/v1')
-        fields.each do |field|
-          @idl_order[idl_class][field['name']] = i
-          i += 1
-        end
-      end
+      @idl_order = IDLParser.new(idl).field_order_by_class %i[acn acp acpl aou ccs circ]
     end
 
     def fetch_statuses
@@ -161,6 +153,7 @@ module EvergreenHoldings
   # Status objects represent all the holdings attached to a specific tcn
   class Status
     attr_reader :copies, :libraries
+
     def initialize(json_data, idl_order, connection = nil)
       @idl_order = idl_order
       @connection = connection
@@ -198,13 +191,14 @@ module EvergreenHoldings
           }
           if item['__p'][@idl_order[:acp]['circulations']].is_a? Array
             begin
-                    item_info[:due_date] = item['__p'][@idl_order[:acp]['circulations']][0]['__p'][@idl_order[:circ]['due_date']]
+              item_info[:due_date] =
+                item['__p'][@idl_order[:acp]['circulations']][0]['__p'][@idl_order[:circ]['due_date']]
             rescue StandardError
-                  end
+            end
             @copies.push Item.new item_info
           else
             @copies.push Item.new item_info
-            end
+          end
         end
       end
     end
@@ -228,6 +222,7 @@ module EvergreenHoldings
   class Item
     attr_accessor :location, :status, :owning_lib
     attr_reader :barcode, :call_number, :due_date
+
     def initialize(data = {})
       data.each do |k, v|
         instance_variable_set("@#{k}", v) unless v.nil?
