@@ -187,7 +187,8 @@ module EvergreenHoldings
             call_number: vol['__p'][@idl_order[:acn]['label']],
             location: item['__p'][@idl_order[:acp]['location']],
             status: item['__p'][@idl_order[:acp]['status']],
-            owning_lib: item['__p'][@idl_order[:acp]['circ_lib']]
+            owning_lib: item['__p'][@idl_order[:acp]['circ_lib']],
+            circ_modifier: item['__p'][@idl_order[:acp]['circ_modifier']]
           }
           if item['__p'][@idl_order[:acp]['circulations']].is_a? Array
             begin
@@ -221,7 +222,7 @@ module EvergreenHoldings
   # A physical copy of an item
   class Item
     attr_accessor :location, :status, :owning_lib
-    attr_reader :barcode, :call_number, :due_date
+    attr_reader :barcode, :call_number, :circ_modifier, :due_date
 
     def initialize(data = {})
       data.each do |k, v|
