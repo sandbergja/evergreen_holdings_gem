@@ -112,7 +112,11 @@ module EvergreenHoldings
     def fetch_idl_order
       @idl_order = {}
 
-      idl = Nokogiri::XML(open(@evergreen_domain + '/reports/fm_IDL.xml'))
+      begin
+        idl = Nokogiri::XML(URI.parse("#{@evergreen_domain}/reports/fm_IDL.xml").open)
+      rescue Errno::ECONNREFUSED, Net::ReadTimeout, OpenURI::HTTPError
+        raise CouldNotConnectToEvergreenError
+      end
 
       %i[acn acp acpl aou ccs circ].each do |idl_class|
         i = 0

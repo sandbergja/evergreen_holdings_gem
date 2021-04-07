@@ -7,12 +7,12 @@ class EvergreenHoldingsTest < Minitest::Test
         assert_instance_of EvergreenHoldings::Connection, conn
     end
     def test_connecting_to_a_404_throws_an_error
-        assert_raises('CouldNotConnectToEvergreenError') {
+        assert_raises(CouldNotConnectToEvergreenError) {
             EvergreenHoldings::Connection.new('http://httpstat.us/404')
         }
     end
     def test_connecting_to_a_non_evergreen_server_throws_an_error
-        assert_raises('CouldNotConnectToEvergreenError') {
+        assert_raises(CouldNotConnectToEvergreenError) {
             EvergreenHoldings::Connection.new('http://libfind.linnbenton.edu')
         }
     end
