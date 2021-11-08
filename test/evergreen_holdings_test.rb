@@ -18,4 +18,13 @@ class EvergreenHoldingsTest < Minitest::Test
       EvergreenHoldings::Connection.new('http://libfind.linnbenton.edu')
     end
   end
+
+  def test_creates_valid_query_strings_for_accessing_the_copy_tree_api
+    conn = EvergreenHoldings::Connection.new 'https://gapines.org'
+    assert_equal 'format=json&input_format=json&'\
+                 'service=open-ils.cat&method=open-ils.cat.asset.copy_tree.global.retrieve&'\
+                 'param=auth_token_not_needed_for_this_call&param=123',
+                 conn.copy_tree_query(123)
+  end
+
 end
