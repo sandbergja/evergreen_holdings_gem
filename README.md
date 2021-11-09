@@ -64,6 +64,6 @@ Development
 
 From within this repo:
 
-. Run `bundle` to install the dependencies for this gem.
-. Run `bin/console` to get a console with this gem loaded.
-. Run `bundle exec rake test` to run the test suite.
+* Run `bundle` to install the dependencies for this gem.
+* Run `bin/console` to get a console with this gem loaded.
+* Run `bundle exec rake test` to run the test suite.
