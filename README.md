@@ -62,6 +62,8 @@ And of course, it's nice to cache the results too, to avoid needing to fetch the
 Development
 -----------
 
-Run `bundle` to install the dependencies for this gem.
+From within this repo:
 
-Run `bundle exec rake test` to run the test suite.
+. Run `bundle` to install the dependencies for this gem.
+. Run `bin/console` to get a console with this gem loaded.
+. Run `bundle exec rake test` to run the test suite.
