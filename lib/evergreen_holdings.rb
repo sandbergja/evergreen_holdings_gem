@@ -30,11 +30,11 @@ module EvergreenHoldings
 
     # Create a query string to run against an OpenSRF gateway
     # Returns a string
-    def copy_tree_query(tcn, options = {})
+    def copy_tree_query(bib_id, options = {})
       method = "open-ils.cat.asset.copy_tree.#{'global.' unless options.key?(:org_unit)}retrieve"
       params = 'format=json&input_format=json&'\
                "service=open-ils.cat&method=#{method}&"\
-               "param=auth_token_not_needed_for_this_call&param=#{tcn}"
+               "param=auth_token_not_needed_for_this_call&param=#{bib_id}"
       return params unless options.key?(:org_unit)
 
       params << if options[:descendants]
@@ -49,8 +49,8 @@ module EvergreenHoldings
     #
     # Usage: `stat = conn.get_holdings 23405`
     # If you just want holdings at a specific org_unit: `my_connection.get_holdings 23405, org_unit: 5`
-    def get_holdings(tcn, options = {})
-      @gateway.query = copy_tree_query(tcn, options)
+    def get_holdings(bib_id, options = {})
+      @gateway.query = copy_tree_query(bib_id, options)
       res = send_query
       return Status.new res.body, @idl_service, self if res
     end
@@ -150,7 +150,7 @@ module EvergreenHoldings
     end
   end
 
-  # Status objects represent all the holdings attached to a specific tcn
+  # Status objects represent all the holdings attached to a specific bib id
   class Status
     attr_reader :copies, :libraries
 

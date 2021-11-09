@@ -15,7 +15,7 @@ Start up a connection:
 
     conn = EvergreenHoldings::Connection.new 'https://libcat.linnbenton.edu'
 
-Check on the availability for the Record ID of your choosing:
+Check on the availability for the bibliographic record ID of your choosing:
 
     status = conn.get_holdings 1234
     
