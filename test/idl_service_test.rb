@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
+require 'nokogiri'
 require 'minitest/autorun'
-require 'evergreen_holdings/idl_parser'
+require 'evergreen_holdings/idl_service'
 
-class IDLParserTest < Minitest::Test
+class IdlServiceTest < Minitest::Test
   def test_parses_idl_correctly
-    parser = EvergreenHoldings::IDLParser.new Nokogiri::XML(File.open('test/fixtures/idl.xml'))
+    doc = Nokogiri::XML(File.open('test/fixtures/idl.xml'))
+    service = EvergreenHoldings::IdlService.new(doc)
     expected = { acn: {
       'copies' => 0,
       'create_date' => 1,
@@ -25,6 +27,6 @@ class IDLParserTest < Minitest::Test
       'prefix' => 15,
       'suffix' => 16
     } }
-    assert_equal(parser.field_order_by_class([:acn]), expected)
+    assert_equal(service.parse_xml([:acn]), expected)
   end
 end

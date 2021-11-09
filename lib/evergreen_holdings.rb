@@ -3,7 +3,8 @@
 require 'net/http'
 require 'json'
 require 'evergreen_holdings/errors'
-require 'evergreen_holdings/idl_parser'
+require 'evergreen_holdings/idl_object'
+require 'evergreen_holdings/idl_service'
 require 'nokogiri'
 require 'open-uri'
 
@@ -51,7 +52,7 @@ module EvergreenHoldings
     def get_holdings(tcn, options = {})
       @gateway.query = copy_tree_query(tcn, options)
       res = send_query
-      return Status.new res.body, @idl_order, self if res
+      return Status.new res.body, @idl_service, self if res
     end
 
     # Given an ID, returns a human-readable name
@@ -75,14 +76,15 @@ module EvergreenHoldings
     end
 
     def take_info_from_ou_tree(o)
-      id = o[@idl_order[:aou]['id']]
+      org = IdlObject.new(:aou, o, @idl_service)
+      id = org.get 'id'
       @org_units[id] = {}
-      @org_units[id][:name] = o[@idl_order[:aou]['name']]
-      if o[@idl_order[:aou]['parent_ou']]
-        @org_units[id][:parent] = o[@idl_order[:aou]['parent_ou']]
-        add_ou_descendants id, o[@idl_order[:aou]['parent_ou']]
+      @org_units[id][:name] = org.get 'name'
+      if org.get 'parent_ou'
+        @org_units[id][:parent] = org.get 'parent_ou'
+        add_ou_descendants id, org.get('parent_ou')
       end
-      o[@idl_order[:aou]['children']].each do |p|
+      org.get('children').each do |p|
         take_info_from_ou_tree p['__p']
       end
     end
@@ -96,7 +98,7 @@ module EvergreenHoldings
       res = send_query
       if res
         data = JSON.parse(res.body)['payload'][0]
-        name = data['__p'][@idl_order[:acpl]['name']] unless data.key? 'stacktrace'
+        name = IdlObject.new(:acpl, data['__p'], @idl_service).get('name') unless data.key? 'stacktrace'
         @acpl_cache[id] = name
         return name if name
       end
@@ -115,13 +117,7 @@ module EvergreenHoldings
     end
 
     def fetch_idl_order
-      begin
-        idl = Nokogiri::XML(URI.parse("#{@evergreen_domain}/reports/fm_IDL.xml").open)
-      rescue Errno::ECONNREFUSED, Net::ReadTimeout, OpenURI::HTTPError
-        raise CouldNotConnectToEvergreenError
-      end
-
-      @idl_order = IDLParser.new(idl).field_order_by_class %i[acn acp acpl aou ccs circ]
+      @idl_service = EvergreenHoldings::IdlService.new(@evergreen_domain)
     end
 
     def fetch_statuses
@@ -132,7 +128,8 @@ module EvergreenHoldings
       if res
         stats = JSON.parse(res.body)['payload'][0]
         stats.each do |stat|
-          @possible_item_statuses[stat['__p'][@idl_order[:ccs]['id']]] = stat['__p'][@idl_order[:ccs]['name']]
+          ccs = IdlObject.new(:ccs, stat['__p'], @idl_service)
+          @possible_item_statuses[ccs.get('id')] = ccs.get('name')
         end
         return true unless stats.empty?
       end
@@ -157,8 +154,8 @@ module EvergreenHoldings
   class Status
     attr_reader :copies, :libraries
 
-    def initialize(json_data, idl_order, connection = nil)
-      @idl_order = idl_order
+    def initialize(json_data, idl_service, connection = nil)
+      @idl_service = idl_service
       @connection = connection
       @raw_data = JSON.parse(json_data)['payload'][0]
       extract_copies
@@ -170,7 +167,6 @@ module EvergreenHoldings
     # Determines if any copies are available for your patrons
     def any_copies_available?
       @copies.each do |copy|
-        return true if copy.status.zero?
         return true if copy.status == 'Available'
       end
       false
@@ -181,22 +177,24 @@ module EvergreenHoldings
     # Look through @raw_data and find the copies
     def extract_copies
       @copies = []
-      @raw_data.each do |vol|
-        next if vol['__p'][0].empty?
+      @raw_data.each do |call_number|
+        next if call_number['__p'][0].empty?
 
-        vol['__p'][0].each do |item|
+        call_number['__p'][0].each do |item|
+          item_data = IdlObject.new :acp, item['__p'], @idl_service
+          call_number_data = IdlObject.new :acn, call_number['__p'], @idl_service
           item_info = {
-            barcode: item['__p'][@idl_order[:acp]['barcode']],
-            call_number: vol['__p'][@idl_order[:acn]['label']],
-            location: item['__p'][@idl_order[:acp]['location']],
-            status: item['__p'][@idl_order[:acp]['status']],
-            owning_lib: item['__p'][@idl_order[:acp]['circ_lib']],
-            circ_modifier: item['__p'][@idl_order[:acp]['circ_modifier']]
+            barcode: item_data.get('barcode'),
+            call_number: call_number_data.get('label'),
+            location: item_data.get('location'),
+            status: item_data.get('status'),
+            owning_lib: item_data.get('circ_lib'),
+            circ_modifier: item_data.get('circ_modifier')
           }
-          if item['__p'][@idl_order[:acp]['circulations']].is_a? Array
+          if item_data.get('circulations').is_a? Array
             begin
-              item_info[:due_date] =
-                item['__p'][@idl_order[:acp]['circulations']][0]['__p'][@idl_order[:circ]['due_date']]
+              circ = IdlObject.new :circ, item_data.get('circulations').first['__p'], @idl_service
+              item_info[:due_date] = circ.get 'due_date'
             rescue StandardError
             end
             @copies.push Item.new item_info
